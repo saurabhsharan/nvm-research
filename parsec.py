@@ -3,9 +3,7 @@
 import os
 import subprocess
 import sys
-
-# 50 GB space
-AFS_DIRECTORY = "/afs/ir/data/saurabh1/"
+import util
 
 COMMAND_LINE_ARGS = {
   "blackscholes": "1 %s %s"
@@ -13,33 +11,11 @@ COMMAND_LINE_ARGS = {
 
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
 
-class untar_file:
-  def __init__(self, tar_filename):
-    self.tar_filename = tar_filename
-
-  def __enter__(self):
-    self.temp_dir = subprocess.check_output(["mktemp", "-d"]).strip()
-    input_filename = subprocess.check_output(["tar", "-xvf", self.tar_filename, "-C", self.temp_dir]).strip()
-    assert len(input_filename.split("\n")) == 1
-    return os.path.join(self.temp_dir, input_filename)
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    # TODO(saurabh): delete self.temp_dir
-    pass
-
-class create_tmp_file:
-  def __enter__(self):
-    return os.path.join(AFS_DIRECTORY, "parsec.out")
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    # TODO(saurabh): delete parsec.out
-    pass
-
 def main(app_name, input_size):
   app_dir = "parsec-3.0/pkgs/apps/%s/" % app_name
 
-  with untar_file(app_dir + "inputs/input_%s.tar" % input_size) as input_filename:
-    with create_tmp_file() as output_filename:
+  with util.untar_file(app_dir + "inputs/input_%s.tar" % input_size) as input_filename:
+    with util.create_tmp_file() as output_filename:
       full_path_to_app = os.path.join(os.getcwd(), app_dir, "inst/amd64-linux.gcc/bin", app_name)
       command_line_args = COMMAND_LINE_ARGS[app_name] % (input_filename, output_filename)
       print "%s %s" % (full_path_to_app, command_line_args)
