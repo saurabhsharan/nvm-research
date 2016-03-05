@@ -13,7 +13,7 @@ VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "nat
 
 PIN_BASE_DIR_PATH = os.path.join(os.getcwd(), "pin")
 PIN_APP_PATH = os.path.join(PIN_BASE_DIR_PATH, "pin")
-PIN_TOOL_PATH = os.path.join(PIN_BASE_DIR_PATH, "sources/tools/ManualExamples/obj-intel64/pinatrace.so")
+PIN_TOOL_PATH = os.path.join(PIN_BASE_DIR_PATH, "source/tools/ManualExamples/obj-intel64/pinatrace.so")
 
 PIN_COMMAND = " ".join([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--", "%s"])
 
@@ -25,10 +25,7 @@ def main(app_name, input_size):
       full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", app_name)
       command_line_args = COMMAND_LINE_ARGS[app_name] % (input_filename, output_filename)
       parsec_command = full_path_to_app + " " + command_line_args
-      print PIN_COMMAND % parsec_command
-      # TODO(saurabh): for some reason subprocess.call() doesn't work here
-      # return_code = subprocess.call("%s %s" % (full_path_to_app, command_line_args))
-      # print return_code
+      subprocess.call([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--"] + parsec_command.split(" "))
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"
