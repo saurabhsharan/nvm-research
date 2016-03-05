@@ -17,24 +17,15 @@ PIN_TOOL_PATH = os.path.join(PIN_BASE_DIR_PATH, "sources/tools/ManualExamples/ob
 
 PIN_COMMAND = " ".join([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--", "%s"])
 
-def full_parsec_command(app_name, input_size):
-  if app_name not in COMMAND_LINE_ARGS:
-    raise ValueError("Invalid app_name %s, must be one of: %s" % (app_name, ", ".join(COMMAND_LINE_ARGS.keys())))
-
-  if input_size not in VALID_INPUT_SIZES:
-    raise ValueError("Invalid input_size %s, must be one of: %s" % (input_size, " ".join(VALID_INPUT_SIZES)))
-
-  app_dir = "parsec-3.0/pkgs/apps/%s/" % app_name
-
-  with util.untar_file(app_dir + "inputs/input_%s.tar" % input_size) as input_filename:
-    with util.create_tmp_file() as output_filename:
-      full_path_to_app = os.path.join(os.getcwd(), app_dir, "inst/amd64-linux.gcc/bin", app_name)
-      command_line_args = COMMAND_LINE_ARGS[app_name] % (input_filename, output_filename)
-      return full_path_to_app + " " + command_line_args
-
 def main(app_name, input_size):
-  parsec_command = full_parsec_command(app_name, input_size)
-  print PIN_COMMAND % parsec_command
+  app_dir = os.path.join(os.getcwd(), "parsec-3.0/pkgs/apps/%s/" % app_name)
+
+  with util.untar_file(os.path.join(app_dir, "inputs/input_%s.tar" % input_size)) as input_filename:
+    with util.create_tmp_file() as output_filename:
+      full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", app_name)
+      command_line_args = COMMAND_LINE_ARGS[app_name] % (input_filename, output_filename)
+      parsec_command = full_path_to_app + " " + command_line_args
+      print PIN_COMMAND % parsec_command
       # TODO(saurabh): for some reason subprocess.call() doesn't work here
       # return_code = subprocess.call("%s %s" % (full_path_to_app, command_line_args))
       # print return_code
