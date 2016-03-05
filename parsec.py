@@ -11,9 +11,13 @@ COMMAND_LINE_ARGS = {
   # TODO(saurabh): look into facesim
   # "facesim": ""
   "ferret": "%(input_file)s 5 5 1 %(output_file)s",
-  "fluidanimate": "1 1 %s %s",
+  "fluidanimate": "1 1 %(input_file)s %(output_file)s",
   "freqmine": "%(input_file)s 1",
   "raytrace": "%(input_file)s -automove -nthreads 1 -frames 1 -res 1 1",
+  # TODO(saurabh): look into swaptions (has no input or output file)
+  # "swaptions": ""
+  "vips": "im_benchmark %(input_file)s %(output_file)s",
+  "x264": "--quiet --qp 20 --partitions b8x8,i4x4 --ref 5 --direct auto --b-pyramid --weightb --mixed-refs --no-fast-pskip --me umh --subme 7 --analyse b8x8,i4x4 --threads 1 -o %(output_file)s %(input_file)s",
 }
 
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
@@ -29,14 +33,15 @@ def main(app_name, input_size):
 
   with util.untar_file(os.path.join(app_dir, "inputs/input_%s.tar" % input_size)) as input_filename:
     with util.create_tmp_file() as output_filename:
-      if app_name == "raytrace":
-        full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", "rtview")
-      else:
-        full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", app_name)
+      full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", app_name)
 
       if app_name == "ferret":
         queries_path = os.path.join(os.path.dirname(input_filename.rstrip("/")), "queries")
         input_filename = " ".join([input_filename, "lsh", queries_path])
+      elif app_name == "raytrace":
+        full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", "rtview")
+      elif app_name == "vips":
+        output_filename = os.path.join(os.path.dirname(output_filename), "parsec.v")
 
       command_line_args = COMMAND_LINE_ARGS[app_name] % dict(input_file=input_filename, output_file=output_filename)
       parsec_command = full_path_to_app + " " + command_line_args
