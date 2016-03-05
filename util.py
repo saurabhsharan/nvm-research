@@ -10,8 +10,8 @@ class untar_file:
 
   def __enter__(self):
     self.temp_dir = subprocess.check_output(["mktemp", "-d"]).strip()
-    input_filename = subprocess.check_output(["tar", "-xvf", self.tar_filename, "-C", self.temp_dir]).strip()
-    assert len(input_filename.split("\n")) == 1
+    input_filename = subprocess.check_output(["tar", "-xvf", self.tar_filename, "-C", self.temp_dir]).strip().split("\n")[0]
+    # assert len(input_filename.split("\n")) == 1
     return os.path.join(self.temp_dir, input_filename)
 
   def __exit__(self, exception_type, exception_value, traceback):
