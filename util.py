@@ -1,4 +1,5 @@
 import os
+import shlex
 import subprocess
 
 # 50 GB space
@@ -25,3 +26,11 @@ class create_tmp_file:
   def __exit__(self, exception_type, exception_value, traceback):
     # TODO(saurabh): delete parsec.out
     pass
+
+def run_under_pin(command_to_run, pin_output_filename):
+  pin_path = os.path.join(os.getcwd(), "pin/pin")
+  pin_tool_path = os.path.join(os.getcwd(), "pin/source/tools/ManualExamples/obj-intel64/pinatrace.so")
+  env_vars = dict(os.environ)
+  env_vars["PINATRACE_OUTPUT_FILENAME"] = pin_output_filename
+  pin_process = subprocess.Popen([pin_path, "-t", pin_tool_path, "--"] + shlex.split(command_to_run), env=env_vars)
+  return pin_process

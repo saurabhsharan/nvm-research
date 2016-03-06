@@ -23,12 +23,6 @@ COMMAND_LINE_ARGS = {
 
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
 
-PIN_BASE_DIR_PATH = os.path.join(os.getcwd(), "pin")
-PIN_APP_PATH = os.path.join(PIN_BASE_DIR_PATH, "pin")
-PIN_TOOL_PATH = os.path.join(PIN_BASE_DIR_PATH, "source/tools/ManualExamples/obj-intel64/pinatrace.so")
-
-PIN_COMMAND = " ".join([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--", "%s"])
-
 def main(app_name, input_size):
   app_dir = os.path.join(os.getcwd(), "parsec-3.0/pkgs/apps/%s/" % app_name)
 
@@ -45,10 +39,9 @@ def main(app_name, input_size):
         output_filename = os.path.join(os.path.dirname(output_filename), "parsec.v")
 
       command_line_args = COMMAND_LINE_ARGS[app_name] % dict(input_file=input_filename, output_file=output_filename)
-      parsec_command = full_path_to_app + " " + command_line_args
-      env_vars = dict(os.environ)
-      print parsec_command
-      subprocess.call([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--"] + shlex.split(parsec_command), env=env_vars)
+      parsec_command = "%s %s" % (full_path_to_app, command_line_args)
+      pin_process = util.run_under_pin(parsec_command, os.path.join(os.getcwd(), "saurabh.out"))
+      pin_process.wait()
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"
