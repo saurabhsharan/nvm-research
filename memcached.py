@@ -5,8 +5,9 @@ import shlex
 import subprocess
 import sys
 import time
+import util
 
-MEMCACHED_PORT = "4001"
+MEMCACHED_PORT = "5000"
 
 def main():
   memcached_path = os.path.join(os.getcwd(), "memcached/memcached")
@@ -15,9 +16,9 @@ def main():
   print "[memcached.py] Starting memcached"
   print "[memcached.py] %s" % memcached_command
 
-  memcached_process = subprocess.Popen(shlex.split(memcached_command))
+  memcached_process = util.run_under_pin(memcached_command, "/dev/null")
 
-  time.sleep(2)
+  time.sleep(5)
 
   memcached_process.poll()
   if memcached_process.returncode != None:
