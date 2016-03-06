@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import shlex
 import subprocess
 import sys
 import util
@@ -47,7 +48,7 @@ def main(app_name, input_size):
       parsec_command = full_path_to_app + " " + command_line_args
       env_vars = dict(os.environ)
       print parsec_command
-      subprocess.call([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--"] + parsec_command.split(" "), env=env_vars)
+      subprocess.call([PIN_APP_PATH, "-t", PIN_TOOL_PATH, "--"] + shlex.split(parsec_command), env=env_vars)
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"
