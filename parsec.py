@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 import util
 
 COMMAND_LINE_ARGS = {
@@ -22,6 +23,8 @@ COMMAND_LINE_ARGS = {
 }
 
 PARSEC_BASE_DIR = "/afs/ir/users/s/a/saurabh1/research/parsec-3.0"
+
+PIN_OUT_BASE_DIR = "/afs/ir/data/saurabh1/pinatrace_out/"
 
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
 
@@ -42,8 +45,17 @@ def main(app_name, input_size):
 
       command_line_args = COMMAND_LINE_ARGS[app_name] % dict(input_file=input_filename, output_file=output_filename)
       parsec_command = "%s %s" % (full_path_to_app, command_line_args)
-      pin_process = util.run_under_pin(command_to_run=parsec_command, pin_output_filename=os.path.join(os.getcwd(), "saurabh.out"))
+
+      pin_output_filename = os.path.join(PIN_OUT_BASE_DIR, app_name, "%s_%s.out" % (time.strftime("%Y_%m_%d_%H_%M_%S"), app_name))
+
+      if not os.path.exists(os.path.dirname(pin_output_filename)):
+        os.makedirs(os.path.dirname(pin_output_filename))
+
+      pin_process = util.run_under_pin(command_to_run=parsec_command, pin_output_filename=pin_output_filename)
+
       pin_process.wait()
+
+      os.symlink(pin_output_filename, os.path.join(os.path.dirname(pin_output_filename), "latest"))
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"
