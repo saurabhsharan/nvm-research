@@ -21,10 +21,12 @@ COMMAND_LINE_ARGS = {
   "x264": "--quiet --qp 20 --partitions b8x8,i4x4 --ref 5 --direct auto --b-pyramid --weightb --mixed-refs --no-fast-pskip --me umh --subme 7 --analyse b8x8,i4x4 --threads 1 -o %(output_file)s %(input_file)s",
 }
 
+PARSEC_BASE_DIR = "/afs/ir/users/s/a/saurabh1/research/parsec-3.0"
+
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
 
 def main(app_name, input_size):
-  app_dir = os.path.join(os.getcwd(), "parsec-3.0/pkgs/apps/%s/" % app_name)
+  app_dir = os.path.join(PARSEC_BASE_DIR, "pkgs/apps", app_name)
 
   with util.untar_file(os.path.join(app_dir, "inputs/input_%s.tar" % input_size)) as input_filename:
     with util.create_tmp_file() as output_filename:
@@ -40,7 +42,7 @@ def main(app_name, input_size):
 
       command_line_args = COMMAND_LINE_ARGS[app_name] % dict(input_file=input_filename, output_file=output_filename)
       parsec_command = "%s %s" % (full_path_to_app, command_line_args)
-      pin_process = util.run_under_pin(parsec_command, os.path.join(os.getcwd(), "saurabh.out"))
+      pin_process = util.run_under_pin(command_to_run=parsec_command, pin_output_filename=os.path.join(os.getcwd(), "saurabh.out"))
       pin_process.wait()
 
 def print_usage():
