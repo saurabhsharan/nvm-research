@@ -29,22 +29,24 @@ PIN_OUT_BASE_DIR = "/afs/ir/data/saurabh1/pinatrace_out/"
 VALID_INPUT_SIZES = ["test", "simdev", "simsmall", "simmedium", "simlarge", "native"]
 
 def main(app_name, input_size):
-  app_dir = os.path.join(PARSEC_BASE_DIR, "pkgs/apps", app_name)
+  app_base_dir = os.path.join(PARSEC_BASE_DIR, "pkgs/apps", app_name)
 
-  with util.untar_file(os.path.join(app_dir, "inputs/input_%s.tar" % input_size)) as input_filename:
+  input_tar_path = os.path.join(app_base_dir, "inputs/input_%s.tar" % input_size)
+
+  with util.untar_file(input_tar_path) as input_filename:
     with util.create_tmp_file() as output_filename:
-      full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", app_name)
+      app_binary_path = os.path.join(app_base_dir, "inst/amd64-linux.gcc/bin", app_name)
 
       if app_name == "ferret":
         queries_path = os.path.join(os.path.dirname(input_filename.rstrip("/")), "queries")
         input_filename = " ".join([input_filename, "lsh", queries_path])
       elif app_name == "raytrace":
-        full_path_to_app = os.path.join(app_dir, "inst/amd64-linux.gcc/bin", "rtview")
+        app_binary_path = os.path.join(app_base_dir, "inst/amd64-linux.gcc/bin", "rtview")
       elif app_name == "vips":
         output_filename = os.path.join(os.path.dirname(output_filename), "parsec.v")
 
       command_line_args = COMMAND_LINE_ARGS[app_name] % dict(input_file=input_filename, output_file=output_filename)
-      parsec_command = "%s %s" % (full_path_to_app, command_line_args)
+      parsec_command = "%s %s" % (app_binary_path, command_line_args)
 
       pin_output_filename = os.path.join(PIN_OUT_BASE_DIR, app_name, "%s_%s.out" % (time.strftime("%Y_%m_%d_%H_%M_%S"), app_name))
 
@@ -55,7 +57,12 @@ def main(app_name, input_size):
 
       pin_process.wait()
 
-      os.symlink(pin_output_filename, os.path.join(os.path.dirname(pin_output_filename), "latest"))
+      symlink_to_latest_output = os.path.join(os.path.dirname(pin_output_filename), "latest")
+
+      if os.path.exists(symlink_to_latest_output):
+        os.remove(symlink_to_latest_output)
+
+      os.symlink(pin_output_filename, symlink_to_latest_output)
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"
