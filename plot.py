@@ -12,7 +12,7 @@ import sys
 def main(app_name):
   path_to_latest_output_file = "/afs/ir/data/saurabh1/pinatrace_out/%s/latest" % app_name
 
-  print "[plot.py]", path_to_latest_output_file
+  print "[plot.py] reading data file", path_to_latest_output_file
 
   if not os.path.exists(path_to_latest_output_file):
     print "ERROR: Could not find latest output file for %s" % app_name
@@ -29,6 +29,8 @@ def main(app_name):
       datapoints.append(int(line.strip().split(": ")[1]))
 
   plt.hist(datapoints)
+  plt.xlabel("# of reads/writes to one page")
+  plt.ylabel("# of pages")
 
   output_graph_image_path = os.path.join(os.path.dirname(path_to_latest_output_file), "page-access-histogram.png")
   plt.savefig(output_graph_image_path)
