@@ -31,6 +31,7 @@ def main(app_name):
   plt.hist(datapoints)
   plt.xlabel("# of reads/writes to one page")
   plt.ylabel("# of pages")
+  plt.title(app_name)
 
   output_graph_image_path = os.path.join(os.path.dirname(path_to_latest_output_file), "page-access-histogram.png")
   plt.savefig(output_graph_image_path)
