@@ -40,17 +40,17 @@ def main(app_name):
 
   fig = plt.figure()
 
-  axis1 = fig.add_subplot(211)
+  axis1 = fig.add_subplot(311)
   axis1.hist(total_accesses_with_cache.values())
-  # axis1.xlabel("# of reads/writes to one page")
-  # axis1.ylabel("# of pages")
-  # axis1.title(app_name + " (with cache)")
+  axis1.set_xlabel("# of reads/writes to one page")
+  axis1.set_ylabel("# of pages")
+  axis1.set_title(app_name + " (with cache)")
 
-  axis2 = fig.add_subplot(212)
+  axis2 = fig.add_subplot(313)
   axis2.hist(total_accesses_without_cache.values())
-  # axis2.xlabel("# of reads/writes to one page")
-  # axis2.ylabel("# of pages")
-  # axis2.title(app_name + " (without cache)")
+  axis2.set_xlabel("# of reads/writes to one page")
+  axis2.set_ylabel("# of pages")
+  axis2.set_title(app_name + " (without cache)")
 
   output_graph_image_path = os.path.join(os.path.dirname(path_to_latest_output_file), "page-access-histogram.png")
   fig.savefig(output_graph_image_path)
