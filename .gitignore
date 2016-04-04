@@ -1,9 +1,10 @@
 parsec-3.0/
 mutilate/
 mutilate_rocks/
-pin/
 memcached/
 ssdb-rocks/
 dune/
+pin/
+!pin/source/tools/ManualExamples/pinatrace.cpp
 */*.log
 */*.out

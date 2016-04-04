@@ -16,12 +16,10 @@ typedef UINT64 CACHE_STATS;
 #include "pin_cache.H"
 
 FILE * trace;
-FILE * addrs;
-int firstInstr = 0;
 
 PIN_LOCK lock;
 
-// cat /sys/devices/system/cpu/cpu0/cache
+// cat /sys/devices/system/cpu/cpu0/cache to get cache stats
 typedef CACHE_DIRECT_MAPPED(KILO, CACHE_ALLOC::STORE_ALLOCATE) L1Cache;
 typedef CACHE_ROUND_ROBIN(8192, 16, CACHE_ALLOC::STORE_ALLOCATE) L3Cache;
 
@@ -169,143 +167,43 @@ thread_data aggregate_thread_data()
 
 Json::Value convert_uint64_map_to_json_value(std::map<uint64_t, uint64_t> m)
 {
-  Json::Value result(Json::objectValue);
+    Json::Value result(Json::objectValue);
 
-  for (std::map<uint64_t, uint64_t>::iterator it = m.begin(); it != m.end(); ++it) {
-    std::ostringstream o, o2;
-    o << it->first;
-    o2 << it->second;
+    for (std::map<uint64_t, uint64_t>::iterator it = m.begin(); it != m.end(); ++it) {
+      // convert uint64_t to string
+      std::ostringstream o, o2;
+      o << it->first;
+      o2 << it->second;
 
-    result[o.str()] = o2.str();
-  }
+      result[o.str()] = o2.str();
+    }
 
-  return result;
+    return result;
 }
 
 VOID Fini(INT32 code, VOID *v)
 {
-    // fclose(addrs);
-    // cout << "fini" << endl;
-
-    std::map<uint64_t, uint64_t> aggregate_page_counts_read;
-    std::map<uint64_t, uint64_t> aggregate_page_counts_write;
-    std::map<uint64_t, uint64_t> aggregate_page_counts_total;
+    Json::Value cache_data(Json::arrayValue);
+    Json::Value no_cache_data(Json::arrayValue);
 
     for (size_t i = 0; i < all_thread_data.size(); i++) {
-      thread_data *td = all_thread_data[i];
+      Json::Value threadData_Cache(Json::objectValue);
+      threadData_Cache["reads"] = convert_uint64_map_to_json_value(all_thread_data[i]->page_count_read_with_cache);
+      threadData_Cache["writes"] = convert_uint64_map_to_json_value(all_thread_data[i]->page_count_write_with_cache);
+      cache_data.append(threadData_Cache);
 
-      std::map<uint64_t, uint64_t> &td_read = td->page_count_read_with_cache;
-      std::map<uint64_t, uint64_t> &td_write = td->page_count_write_with_cache;
-
-      for (std::map<uint64_t, uint64_t>::iterator it = td_read.begin(); it != td_read.end(); ++it) {
-        uint64_t pageno = it->first;
-        uint64_t count = it->second;
-
-        if (aggregate_page_counts_read.find(pageno) == aggregate_page_counts_read.end()) {
-          aggregate_page_counts_read[pageno] = 0;
-        }
-
-        if (aggregate_page_counts_total.find(pageno) == aggregate_page_counts_total.end()) {
-          aggregate_page_counts_total[pageno] = 0;
-        }
-
-        aggregate_page_counts_read[pageno] += count;
-        aggregate_page_counts_total[pageno] += count;
-      }
-
-      for (std::map<uint64_t, uint64_t>::iterator it = td_write.begin(); it != td_write.end(); ++it) {
-        uint64_t pageno = it->first;
-        uint64_t count = it->second;
-
-        if (aggregate_page_counts_write.find(pageno) == aggregate_page_counts_write.end()) {
-          aggregate_page_counts_write[pageno] = 0;
-        }
-
-        if (aggregate_page_counts_total.find(pageno) == aggregate_page_counts_total.end()) {
-          aggregate_page_counts_total[pageno] = 0;
-        }
-
-        aggregate_page_counts_write[pageno] += count;
-        aggregate_page_counts_total[pageno] += count;
-      }
+      Json::Value threadData_noCache(Json::objectValue);
+      threadData_noCache["reads"] = convert_uint64_map_to_json_value(all_thread_data[i]->page_count_read_without_cache);
+      threadData_noCache["writes"] = convert_uint64_map_to_json_value(all_thread_data[i]->page_count_write_without_cache);
+      no_cache_data.append(threadData_noCache);
     }
-
-    cout << endl << endl << endl << endl << endl;
-    // fprintf(trace, "\n\n\n\n\n\n\n\n\n\n\n\n");
-
-    Json::Value page_counts_read(Json::objectValue);
-
-    cout << "==== READS ====" << endl;
-    // fprintf(trace, "## READS\n");
-    for (std::map<uint64_t, uint64_t>::iterator it = aggregate_page_counts_read.begin(); it != aggregate_page_counts_read.end(); ++it) {
-      cout << it->first << ": " << it->second << endl;
-      // fprintf(trace, "%lu: %lu\n", it->first, it->second);
-
-      std::ostringstream o, o2;
-      o << it->first;
-      o2 << it->second;
-
-      page_counts_read[o.str()] = o2.str();
-    }
-
-    // cout << page_counts_read << endl;
-
-    cout << endl << endl;
-
-    Json::Value page_counts_write(Json::objectValue);
-
-    cout << "==== WRITES ====" << endl;
-    // fprintf(trace, "## WRITES\n");
-    for (std::map<uint64_t, uint64_t>::iterator it = aggregate_page_counts_write.begin(); it != aggregate_page_counts_write.end(); ++it) {
-      cout << it->first << ": " << it->second << endl;
-      // fprintf(trace, "%lu: %lu\n", it->first, it->second);
-
-      std::ostringstream o, o2;
-      o << it->first;
-      o2 << it->second;
-
-      page_counts_write[o.str()] = o2.str();
-    }
-
-    // cout << page_counts_write << endl;
-
-    cout << endl << endl;
-
-    Json::Value page_counts_total(Json::objectValue);
-
-    cout << "==== TOTAL ====" << endl;
-    // fprintf(trace, "## TOTAL\n");
-    for (std::map<uint64_t, uint64_t>::iterator it = aggregate_page_counts_total.begin(); it != aggregate_page_counts_total.end(); ++it) {
-      cout << it->first << ": " << it->second << endl;
-      // fprintf(trace, "%lu: %lu\n", it->first, it->second);
-
-      std::ostringstream o, o2;
-      o << it->first;
-      o2 << it->second;
-
-      page_counts_total[o.str()] = o2.str();
-    }
-
-    // cout << page_counts_total << endl;
-
-    thread_data agg_td = aggregate_thread_data();
-    Json::Value agg_read_with_cache = convert_uint64_map_to_json_value(agg_td.page_count_read_with_cache);
-    Json::Value agg_read_without_cache = convert_uint64_map_to_json_value(agg_td.page_count_read_without_cache);
-    Json::Value agg_write_with_cache = convert_uint64_map_to_json_value(agg_td.page_count_write_with_cache);
-    Json::Value agg_write_without_cache = convert_uint64_map_to_json_value(agg_td.page_count_write_without_cache);
 
     Json::Value root(Json::objectValue);
-    root["read_with_cache"] = agg_read_with_cache;
-    root["read_without_cache"] = agg_read_without_cache;
-    root["write_with_cache"] = agg_write_with_cache;
-    root["write_without_cache"] = agg_write_without_cache;
-
-    // cout << root << endl;
+    root["cache"] = cache_data;
+    root["no_cache"] = no_cache_data;
 
     ofstream ofs(std::getenv("PINATRACE_OUTPUT_FILENAME"), ofstream::out);
-
     ofs << root << endl;
-
     ofs.close();
 }
 

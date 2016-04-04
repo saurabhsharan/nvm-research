@@ -18,6 +18,8 @@ Overall TODO
 - Store command(-line arguments) that generated trace
 - User-level named plots for different runs (similar to user-level named collections?)
 - Run-time configurable logging for pin module
+- Store data in some other system to make it easier to analyze / slice-and-dice?
+  e.g. look into https://pythonhosted.org/cubes/
 
 Initial ideas for primitives
 ============================

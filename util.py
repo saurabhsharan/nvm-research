@@ -1,9 +1,35 @@
+import json
 import os
 import shlex
 import subprocess
 
 # 50 GB space
 AFS_DIRECTORY = "/afs/ir/data/saurabh1/"
+
+class Trace:
+  def __init__(self, trace_filename):
+    # read entire trace once in constructor
+    with open(trace_filename) as f:
+      self.trace_data = json.load(f)
+
+  def _combine_dicts(self, dicts):
+    result = {}
+
+    for d in dicts:
+      for k in d:
+        pageno = int(k)
+        count = int(d[k])
+        result[pageno] = count + result.get(pageno, 0)
+
+    return result
+
+  def aggregate_reads_writes(self, with_cache=True):
+    if with_cache:
+      data_to_aggregate = self.trace_data["cache"]
+    else:
+      data_to_aggregate = self.trace_data["no_cache"]
+
+    return self._combine_dicts([td['reads'] for td in data_to_aggregate] + [td['writes'] for td in data_to_aggregate])
 
 class untar_file:
   def __init__(self, tar_filename):
