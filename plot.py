@@ -22,20 +22,25 @@ def main(app_name):
 
   trace = util.Trace(path_to_latest_output_file)
 
-  total_accesses_with_cache = trace.aggregate_reads_writes()
-  total_accesses_without_cache = trace.aggregate_reads_writes(with_cache=False)
+  # `all_memory_accesses` is list of (pageno, count) pairs sorted by count
+  all_memory_accesses = list(trace.aggregate_reads_writes().iteritems())
+  all_memory_accesses = sorted(all_memory_accesses, key=lambda x: x[1], reverse=True)
 
-  # read_write_ratios_with_cache = []
-  # for pageno, write_count in pin_data["write_with_cache"].iteritems():
-    # read_count = pin_data["read_with_cache"].get(pageno, 0)
-    # print pageno, read_count, write_count
-    # read_write_ratios_with_cache.append(float(read_count) / float(write_count))
+  def num_total_accesses(memory_accesses):
+    return sum(ma[1] for ma in memory_accesses)
 
-  # for r in read_write_ratios_with_cache:
-    # if r > 0.0:
-      # print r
+  total_num_memory_accesses = num_total_accesses(all_memory_accesses)
 
-  fig = plt.figure()
+  for i in range(1, 11):
+    percentile = i * 10
+    subset_memory_accesses = util.percentile_slice(all_memory_accesses, percentile)
+    count = num_total_accesses(subset_memory_accesses)
+    print "%d percentile: %f percent (%d / %d)" % (i * 10, (float(count) / float(total_num_memory_accesses)) * 100, count, total_num_memory_accesses)
+
+  # print all_memory_accesses
+  # print total_num_memory_accesses
+
+  return
 
   axis1 = fig.add_subplot(511)
   axis1.hist(total_accesses_with_cache.values())
@@ -48,12 +53,6 @@ def main(app_name):
   axis2.set_xlabel("# of reads/writes to one page")
   axis2.set_ylabel("# of pages")
   axis2.set_title(app_name + " (without cache)")
-
-  # axis3 = fig.add_subplot(515)
-  # axis3.hist(read_write_ratios_with_cache)
-  # axis3.set_xlabel("read:write ratio")
-  # axis3.set_ylabel("# of pages")
-  # axis3.set_title(app_name + " (with cache)")
 
   output_graph_image_path = os.path.join(os.path.dirname(path_to_latest_output_file), "page-access-histogram.png")
   fig.savefig(output_graph_image_path)

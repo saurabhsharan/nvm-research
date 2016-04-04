@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import shlex
 import subprocess
@@ -60,3 +61,10 @@ def run_under_pin(command_to_run, pin_output_filename):
   env_vars["PINATRACE_OUTPUT_FILENAME"] = pin_output_filename
   pin_process = subprocess.Popen([pin_path, "-t", pin_tool_path, "--"] + shlex.split(command_to_run), env=env_vars)
   return pin_process
+
+# Uses https://en.wikipedia.org/wiki/Percentile#The_Nearest_Rank_method
+def percentile_slice(elems, percentile):
+  assert 0 <= percentile <= 100
+  n = int(math.ceil((percentile / 100.0) * len(elems)))
+  assert 1 <= n <= len(elems)
+  return elems[:n]
