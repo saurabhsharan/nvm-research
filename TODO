@@ -4,6 +4,14 @@
   - Directly on top of file-system?
   - Want to be able define new ad-hoc collections of data
 - Overnight jobs (using barley?)
-- Investigate variability between different runs
-- Define higher-level tasks
+- Compare data across runs in spite of different addresses
+  - Disbale ASLR?
+    - What about mmap/malloc calls?
+  - Investigate variability between different runs
+    - Take average of page counts across several runs?
+- Define higher-level tasks (simple bash or python scripts?)
 - Wrapper around python matplotlib
+- Retain thread-level traces (i.e. don't do thread => process aggregation in pin module)
+- Add timing information to trace
+- Store command(-line arguments) that generated trace
+- User-level named plots for different runs (similar to user-level named collections?)
