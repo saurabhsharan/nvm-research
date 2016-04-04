@@ -72,17 +72,9 @@ TLS_KEY tls_key;
 
 std::vector<thread_data *> all_thread_data;
 
-VOID PrintProcAddrs()
-{
-  std::ifstream t("/proc/self/maps");
-  std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-  // fprintf(addrs, "%zu\n%s\n", str.length(), str.c_str());
-  fprintf(addrs, "%s\n\n\n", str.c_str());
-}
-
 thread_data *get_tls(THREADID threadid)
 {
-  return static_cast<thread_data *>(PIN_GetThreadData(tls_key, threadid));
+    return static_cast<thread_data *>(PIN_GetThreadData(tls_key, threadid));
 }
 
 // Print a memory read record
@@ -91,13 +83,10 @@ VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
     PIN_GetLock(&lock, 0);
     bool dl1hit = dl1cache->AccessSingleLine((ADDRINT)addr, CACHE_BASE::ACCESS_TYPE_LOAD);
     bool dl3hit = dl3cache->AccessSingleLine((ADDRINT)addr, CACHE_BASE::ACCESS_TYPE_LOAD);
-    // if (std::rand() < (RAND_MAX / 3)) {
-      // fprintf(trace,"M %p R %p %s %s\n", ip, addr, dl1hit ? "H" : "M", dl3hit ? "H" : "M");
-    // }
     PIN_ReleaseLock(&lock);
 
-  thread_data *td = get_tls(threadid);
-  td->record_mem_read(ip, addr, dl1hit || dl3hit);
+    thread_data *td = get_tls(threadid);
+    td->record_mem_read(ip, addr, dl1hit || dl3hit);
 }
 
 // Print a memory write record
@@ -106,29 +95,15 @@ VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
     PIN_GetLock(&lock, 0);
     bool dl1hit = dl1cache->AccessSingleLine((ADDRINT)addr, CACHE_BASE::ACCESS_TYPE_STORE);
     bool dl3hit = dl3cache->AccessSingleLine((ADDRINT)addr, CACHE_BASE::ACCESS_TYPE_STORE);
-    // if (std::rand() < (RAND_MAX / 500)) {
-      // fprintf(trace,"M %p W %p %s %s\n", ip, addr, dl1hit ? "H" : "M", dl3hit ? "H" : "M");
-    // }
     PIN_ReleaseLock(&lock);
 
-  thread_data *td = get_tls(threadid);
-  td->record_mem_write(ip, addr, dl1hit || dl3hit);
+    thread_data *td = get_tls(threadid);
+    td->record_mem_write(ip, addr, dl1hit || dl3hit);
 }
 
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
-  // if (firstInstr == 0) {
-    // fprintf(addrs, "0x%lx %s\n", INS_Address(ins), INS_Disassemble(ins).c_str());
-    // PrintProcAddrs();
-    // firstInstr = 1;
-  // }
-
-  // if (std::rand() < RAND_MAX / 20) {
-    // PrintProcAddrs();
-    // fprintf(trace, "ADDR\n");
-  // }
-
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
     //
@@ -141,6 +116,7 @@ VOID Instruction(INS ins, VOID *v)
     {
         if (INS_MemoryOperandIsRead(ins, memOp))
         {
+            // TODO(saurabh): register different function based on whether we want to use cache or not (run-time configuration flag)
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
                 IARG_INST_PTR,
@@ -153,6 +129,7 @@ VOID Instruction(INS ins, VOID *v)
         // In that case we instrument it once for read and once for write.
         if (INS_MemoryOperandIsWritten(ins, memOp))
         {
+            // TODO(saurabh): register different function based on whether we want to use cache or not (run-time configuration flag)
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
                 IARG_INST_PTR,
@@ -161,65 +138,6 @@ VOID Instruction(INS ins, VOID *v)
                 IARG_END);
         }
     }
-}
-
-// Print syscall number and arguments
-VOID SysBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3, ADDRINT arg4, ADDRINT arg5)
-{
-#if defined(TARGET_LINUX) && defined(TARGET_IA32)
-  // On ia32 Linux, there are only 5 registers for passing system call arguments,
-  // but mmap needs 6. For mmap on ia32, the first argument to the system call
-  // is a pointer to an array of the 6 arguments
-  if (num == SYS_mmap)
-  {
-    ADDRINT * mmapArgs = reinterpret_cast<ADDRINT *>(arg0);
-    arg0 = mmapArgs[0];
-    arg1 = mmapArgs[1];
-    arg2 = mmapArgs[2];
-    arg3 = mmapArgs[3];
-    arg4 = mmapArgs[4];
-    arg5 = mmapArgs[5];
-  }
-#endif
-
-  // PrintProcAddrs();
-  /*
-  fprintf(trace,"S 0x%lx %ld 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx ",
-      (unsigned long)ip,
-      (long)num,
-      (unsigned long)arg0,
-      (unsigned long)arg1,
-      (unsigned long)arg2,
-      (unsigned long)arg3,
-      (unsigned long)arg4,
-      (unsigned long)arg5);
-  */
-}
-
-VOID SyscallEntry(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID *v)
-{
-  SysBefore(PIN_GetContextReg(ctxt, REG_INST_PTR),
-      PIN_GetSyscallNumber(ctxt, std),
-      PIN_GetSyscallArgument(ctxt, std, 0),
-      PIN_GetSyscallArgument(ctxt, std, 1),
-      PIN_GetSyscallArgument(ctxt, std, 2),
-      PIN_GetSyscallArgument(ctxt, std, 3),
-      PIN_GetSyscallArgument(ctxt, std, 4),
-      PIN_GetSyscallArgument(ctxt, std, 5));
-}
-
-// Print the return value of the system call
-VOID SysAfter(ADDRINT ret)
-{
-      // fprintf(trace,"0x%lx\n", (unsigned long)ret);
-          // fflush(trace);
-          PrintProcAddrs();
-}
-
-
-VOID SyscallExit(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID *v)
-{
-      SysAfter(PIN_GetSyscallReturn(ctxt, std));
 }
 
 thread_data aggregate_thread_data()
@@ -395,9 +313,8 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 {
     PIN_GetLock(&lock, 0);
 
-    // std::cout << "Starting thread " << threadid << endl;
-
     thread_data *td = new thread_data;
+
     PIN_SetThreadData(tls_key, td, threadid);
 
     all_thread_data.push_back(td);
@@ -405,19 +322,10 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
     PIN_ReleaseLock(&lock);
 }
 
-// VOID ThreadFini(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
 {
-    PIN_GetLock(&lock, 0);
-
-    // std::cout << "Ending thread " << threadid << endl;
-
-    PIN_ReleaseLock(&lock);
+    // TODO(saurabh): (debug) log that thread finished
 }
-
-/* ===================================================================== */
-/* Print Help Message                                                    */
-/* ===================================================================== */
 
 INT32 Usage()
 {
@@ -425,10 +333,6 @@ INT32 Usage()
               + KNOB_BASE::StringKnobSummary() + "\n");
     return -1;
 }
-
-/* ===================================================================== */
-/* Main                                                                  */
-/* ===================================================================== */
 
 int main(int argc, char *argv[])
 {
@@ -443,16 +347,11 @@ int main(int argc, char *argv[])
     dl1cache = new L1Cache("L1 Data Cache", 64 * KILO, 64, 1);
     dl3cache = new L3Cache("L3 Unified Cache", /* size = */ 8192 * KILO, /* block size = */ 64, /* associativity = */ 16);
 
-    // trace = fopen(std::getenv("PINATRACE_OUTPUT_FILENAME"), "w");
-    // addrs = fopen("pinaaddrs.out", "w");
-
     std::srand(std::time(0));
 
     PIN_AddThreadStartFunction(ThreadStart, 0);
     PIN_AddThreadFiniFunction(ThreadFini, 0);
 
-    // PIN_AddSyscallEntryFunction(SyscallEntry, 0);
-    // PIN_AddSyscallExitFunction(SyscallExit, 0);
     INS_AddInstrumentFunction(Instruction, 0);
 
     PIN_AddFiniFunction(Fini, 0);
