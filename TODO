@@ -1,3 +1,5 @@
+Overall TODO
+============
 - How to manage names between scripts?
   - Naming scheme must be hierarchal & stable
     e.g. "/memcached/logs/latest"
@@ -15,3 +17,28 @@
 - Add timing information to trace
 - Store command(-line arguments) that generated trace
 - User-level named plots for different runs (similar to user-level named collections?)
+
+Initial ideas for primitives
+============================
+
+Users interact with system in two ways:
+- Specify workload through CLI
+- Analyze multiple runs (usually to create plots)
+
+CLI primitives:
+- Run
+  - Job that creates one trace of memcached, parsec, etc.
+  - Defined by command-line options
+  - Can be run locally or on barley
+  - Can belong to at most one collection
+- Collection
+  - Named group of runs
+  - Can define matchers on command-line options for runs within a collection (but not across collections?)
+
+Analysis primitives:
+- Trace
+  - Output of one run
+  - Internally composed of data from multiple threads
+  - Tracks reads/writes to each page
+- Trace aggregation
+  - ???
