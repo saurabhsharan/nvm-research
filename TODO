@@ -17,6 +17,7 @@ Overall TODO
 - Add timing information to trace
 - Store command(-line arguments) that generated trace
 - User-level named plots for different runs (similar to user-level named collections?)
+- Run-time configurable logging for pin module
 
 Initial ideas for primitives
 ============================
@@ -41,4 +42,4 @@ Analysis primitives:
   - Internally composed of data from multiple threads
   - Tracks reads/writes to each page
 - Trace aggregation
-  - ???
+  - Be able to aggregate/slice across different page numbers, cache (enabled/disabled), threads
