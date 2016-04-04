@@ -1,0 +1,9 @@
+- How to manage names between scripts?
+  - Naming scheme must be hierarchal & stable
+    e.g. "/memcached/logs/latest"
+  - Directly on top of file-system?
+  - Want to be able define new ad-hoc collections of data
+- Overnight jobs (using barley?)
+- Investigate variability between different runs
+- Define higher-level tasks
+- Wrapper around python matplotlib
