@@ -11,15 +11,18 @@ Overall TODO
     - What about mmap/malloc calls?
   - Investigate variability between different runs
     - Take average of page counts across several runs?
+  - Just look at difference in distributions of counts?
+    Overall "histogram" should roughly be the same
 - Define higher-level tasks (simple bash or python scripts?)
 - Wrapper around python matplotlib
-- Retain thread-level traces (i.e. don't do thread => process aggregation in pin module)
 - Add timing information to trace
 - Store command(-line arguments) that generated trace
 - User-level named plots for different runs (similar to user-level named collections?)
 - Run-time configurable logging for pin module
 - Store data in some other system to make it easier to analyze / slice-and-dice?
   e.g. look into https://pythonhosted.org/cubes/
+- Automatically generate traces based on what plot file needs?
+  Plot configuration in separate file?
 
 Initial ideas for primitives
 ============================
@@ -45,3 +48,7 @@ Analysis primitives:
   - Tracks reads/writes to each page
 - Trace aggregation
   - Be able to aggregate/slice across different page numbers, cache (enabled/disabled), threads
+
+Finished Tasks
+=============
+[4f59c2b] Retain thread-level traces (i.e. don't do thread => process aggregation in pin module)

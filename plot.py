@@ -12,7 +12,8 @@ import sys
 import util
 
 def main(app_name):
-  path_to_latest_output_file = "/afs/ir/data/saurabh1/pinatrace_out/%s/latest" % app_name
+  # path_to_latest_output_file = "/afs/ir/data/saurabh1/pinatrace_out/%s/latest" % app_name
+  path_to_latest_output_file = "/afs/ir/data/saurabh1/pinatrace_out/memcached/%s" % app_name
 
   print "[plot.py] reading data file", path_to_latest_output_file
 
@@ -39,6 +40,9 @@ def main(app_name):
 
   # print all_memory_accesses
   # print total_num_memory_accesses
+
+  print
+  print "Accessed %d total pages" % len(all_memory_accesses)
 
   return
 

@@ -4,6 +4,8 @@ import os
 import shlex
 import subprocess
 
+RESEARCH_DIR = "/afs/ir/users/s/a/saurabh1/research"
+
 # 50 GB space
 AFS_DIRECTORY = "/afs/ir/data/saurabh1/"
 
@@ -12,6 +14,12 @@ class Trace:
     # read entire trace once in constructor
     with open(trace_filename) as f:
       self.trace_data = json.load(f)
+
+    # stay backwards-compatible with old trace files
+    if 'header' in self.trace_data:
+      self.header = self.trace_data['header']
+    if 'data' in self.trace_data:
+      self.trace_data = self.trace_data['data']
 
   def _combine_dicts(self, dicts):
     result = {}
@@ -54,12 +62,16 @@ class create_tmp_file:
     # TODO(saurabh): delete parsec.out
     pass
 
-def run_under_pin(command_to_run, pin_output_filename):
-  pin_path = os.path.join(os.getcwd(), "pin/pin")
-  pin_tool_path = os.path.join(os.getcwd(), "pin/source/tools/ManualExamples/obj-intel64/pinatrace.so")
+def run_under_pin(command_to_run, pin_output_filename, child_injection=False):
+  pin_path = os.path.join(RESEARCH_DIR, "pin/pin")
+  pin_tool_path = os.path.join(RESEARCH_DIR, "pin/source/tools/ManualExamples/obj-intel64/pinatrace.so")
   env_vars = dict(os.environ)
   env_vars["PINATRACE_OUTPUT_FILENAME"] = pin_output_filename
-  pin_process = subprocess.Popen([pin_path, "-t", pin_tool_path, "--"] + shlex.split(command_to_run), env=env_vars)
+  if child_injection:
+    injection_method = "child"
+  else:
+    injection_method = "dynamic"
+  pin_process = subprocess.Popen([pin_path, "-injection", injection_method, "-t", pin_tool_path, "--"] + shlex.split(command_to_run), env=env_vars)
   return pin_process
 
 # Uses https://en.wikipedia.org/wiki/Percentile#The_Nearest_Rank_method
@@ -68,3 +80,28 @@ def percentile_slice(elems, percentile):
   n = int(math.ceil((percentile / 100.0) * len(elems)))
   assert 1 <= n <= len(elems)
   return elems[:n]
+
+def write_header_to_json_data_file(header, filename):
+  with open(filename, 'r') as f:
+    data = json.load(f)
+
+  result = {}
+  result['header'] = header
+  result['data'] = data
+
+  with open(filename, 'w+') as f:
+    f.write(json.dumps(result))
+
+class PgrepError(Exception):
+  pass
+
+def get_children_pids(parent_pid):
+  pgrep_command = "pgrep -P %r" % parent_pid
+  pgrep_process = subprocess.Popen(shlex.split(pgrep_command), stdout=subprocess.PIPE)
+  pgrep_process.wait()
+
+  if pgrep_process.returncode != 0:
+    raise PgrepError()
+
+  children_pids = pgrep_process.stdout.read().strip().split("\n")
+  return children_pids

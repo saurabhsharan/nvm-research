@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import os
 import shlex
 import subprocess
@@ -55,7 +56,11 @@ def main(app_name, input_size):
 
       pin_process = util.run_under_pin(command_to_run=parsec_command, pin_output_filename=pin_output_filename)
 
+      pin_process_start_time = datetime.datetime.now()
+
       pin_process.wait()
+
+      pin_process_end_time = datetime.datetime.now()
 
       symlink_to_latest_output = os.path.join(os.path.dirname(pin_output_filename), "latest")
 
@@ -63,6 +68,13 @@ def main(app_name, input_size):
         os.remove(symlink_to_latest_output)
 
       os.symlink(pin_output_filename, symlink_to_latest_output)
+
+      header = {
+        'app_name': app_name,
+        'input_size': input_size,
+        'time_ms': ((pin_process_end_time - pin_process_start_time).seconds) * 1000
+      }
+      util.write_header_to_json_data_file(header, pin_output_filename)
 
 def print_usage():
   print "Usage: ./parsec.py {app_name} {input_size}"

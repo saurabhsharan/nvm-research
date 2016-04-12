@@ -183,6 +183,8 @@ Json::Value convert_uint64_map_to_json_value(std::map<uint64_t, uint64_t> m)
 
 VOID Fini(INT32 code, VOID *v)
 {
+    std::cout << "FINI!!!" << std::endl;
+
     Json::Value cache_data(Json::arrayValue);
     Json::Value no_cache_data(Json::arrayValue);
 
