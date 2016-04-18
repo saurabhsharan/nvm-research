@@ -24,7 +24,7 @@ def main(app_name):
   trace = util.Trace(path_to_latest_output_file)
 
   # `all_memory_accesses` is list of (pageno, count) pairs sorted by count
-  all_memory_accesses = list(trace.aggregate_reads_writes().iteritems())
+  all_memory_accesses = list(trace.aggregate_writes(with_cache=False).iteritems())
   all_memory_accesses = sorted(all_memory_accesses, key=lambda x: x[1], reverse=True)
 
   def num_total_accesses(memory_accesses):
@@ -37,6 +37,10 @@ def main(app_name):
     subset_memory_accesses = util.percentile_slice(all_memory_accesses, percentile)
     count = num_total_accesses(subset_memory_accesses)
     print "%d percentile: %f percent (%d / %d)" % (i * 10, (float(count) / float(total_num_memory_accesses)) * 100, count, total_num_memory_accesses)
+
+  top_10_list = all_memory_accesses[:10]
+  print top_10_list
+  print "Top 10: %f" % ((float(num_total_accesses(top_10_list)) / float(total_num_memory_accesses)))
 
   # print all_memory_accesses
   # print total_num_memory_accesses

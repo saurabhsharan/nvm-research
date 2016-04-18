@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
+import datetime
 import os
+import random
 import shlex
 import signal
 import subprocess
 import sys
 import time
 import util
-import datetime
-
-MEMCACHED_PORT = "6977"
 
 RESEARCH_DIR = "/afs/ir/users/s/a/saurabh1/research"
 
@@ -17,19 +16,30 @@ PIN_OUT_BASE_DIR = "/afs/ir/data/saurabh1/pinatrace_out/"
 
 # TODO(saurabh): use helper functions w/ exceptions to clean up control flow?
 def main():
-  memcached_path = os.path.join(RESEARCH_DIR, "memcached/memcached")
+  filename_prefix = time.strftime("%Y_%m_%d_%H_%M_%S")
+
+  memcached_port = str(random.SystemRandom().randint(10000, 60000))
+  memcached_alloc_output_filename = os.path.join(PIN_OUT_BASE_DIR, "memcached", "%s_memcached_alloc.out" % filename_prefix)
+
+  if not os.path.exists(os.path.dirname(memcached_alloc_output_filename)):
+    os.makedirs(os.path.dirname(memcached_alloc_output_filename))
+
+  memcached_path = os.path.join(RESEARCH_DIR, "memcached_log/memcached")
   # TODO(saurabh): make -m value configurable?
-  memcached_command = "%s -p %s -m 10000" % (memcached_path, MEMCACHED_PORT)
+  memcached_command = "%s -p %s -m 10000" % (memcached_path, memcached_port)
+
+  # disable ASLR
+  # memcached_command = "setarch x86_64 -R %s" % memcached_command
 
   print "[memcached.py] Starting memcached"
   print "[memcached.py] %s" % memcached_command
 
-  pin_output_filename = os.path.join(PIN_OUT_BASE_DIR, "memcached", "%s_memcached.out" % time.strftime("%Y_%m_%d_%H_%M_%S"))
+  pin_output_filename = os.path.join(PIN_OUT_BASE_DIR, "memcached", "%s_memcached.out" % filename_prefix)
 
   if not os.path.exists(os.path.dirname(pin_output_filename)):
     os.makedirs(os.path.dirname(pin_output_filename))
 
-  pin_process = util.run_under_pin(memcached_command, pin_output_filename, child_injection=True)
+  pin_process = util.run_under_pin(memcached_command, pin_output_filename, child_injection=True, memcached_alloc_filename=memcached_alloc_output_filename)
 
   print "[memcached.py] pin process pid = %s" % pin_process.pid
 
@@ -44,7 +54,7 @@ def main():
   valuesize, records, time_sec = sys.argv[1], sys.argv[2], sys.argv[3]
 
   mutilate_path = os.path.join(RESEARCH_DIR, "mutilate/mutilate")
-  mutilate_command = "%s --server localhost:%s --verbose --valuesize=%s --records=%s --time=%s" % (mutilate_path, MEMCACHED_PORT, valuesize, records, time_sec)
+  mutilate_command = "%s --server localhost:%s --verbose --update=0.5 --valuesize=%s --records=%s --time=%s" % (mutilate_path, memcached_port, valuesize, records, time_sec)
 
   print "[memcached.py] Starting mutilate"
   print "[memcached.py] %s" % mutilate_command
@@ -94,13 +104,26 @@ def main():
   if os.path.lexists(symlink_to_latest_output):
     if not os.path.exists(symlink_to_latest_output):
       print "[memcached.py] WARNING: Broken symlink points to bad file %s" % os.path.realpath(symlink_to_latest_output)
+
+    symlink_to_previous_latest_output = os.path.join(os.path.dirname(pin_output_filename), "latest2")
+    if os.path.lexists(symlink_to_previous_latest_output):
+      os.remove(symlink_to_previous_latest_output)
+    os.symlink(os.path.realpath(symlink_to_latest_output), symlink_to_previous_latest_output)
+
+    print "[memcached.py] Linking previous to %s" % symlink_to_previous_latest_output
+
     os.remove(symlink_to_latest_output)
 
   os.symlink(pin_output_filename, symlink_to_latest_output)
 
-  print "[memcached.py] added symlink"
+  print "[memcached.py] added symlink %s" % symlink_to_latest_output
 
-  with open("memcached_log5.txt", 'a') as f:
+  # add random jitter (max 2 sec) to prevent race conditions :)
+  time.sleep(random.SystemRandom().randint(1, 200) / 100.0)
+
+  memcached_log_filename = os.path.join(RESEARCH_DIR, "mix/memcached_log.txt")
+
+  with open(memcached_log_filename, 'a') as f:
     f.write("%s\n%s\n%r sec\n\n" % (mutilate_command[len(os.path.dirname(mutilate_path)):], pin_output_filename[len(os.path.dirname(pin_output_filename)):], (mutilate_end_time - mutilate_start_time).seconds))
 
   print "[memcached.py] wrote command to log file: %s" % pin_output_filename
